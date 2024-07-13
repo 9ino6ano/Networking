@@ -1,0 +1,214 @@
+VUT MAIN COMMAND SHEET
+_____________________
+Router Configuration
+>int g0/0
+>ip add 172.16.0.1 255.255.255.252
+>no shut
+>desc connected to the core switch
+>ex
+>int g0/1
+>ip add 10.1.1.1 255.255.255.252
+>no shut
+>desc connected to the tenet server
+>ex
+=====================
+tenet configuration (Physical)
+-> ip add = 10.1.1.2 255.255.255.252
+-> default-gateway = 10.1.1.1
+=====================
+Ping to test connectivity between R1,Tenet and L3 Switch
+>10.1.1.1 / 10.1.1.2
+>172.16.0.1 / 172.16.0.2
+>connection from R1 to L3-Switch Should Fail. (We must convert it from L2 Switchport to L3 Router Interface)
+_____________________
+L3 SWITCH = Core Switch -> checking configuration
+-show run (sh r)
+-show ip interface brief (sh ip int br)
+-show vtp status (sh vtp st)
+-show vlan (sh vlan)
+=====================
+Conditionally??
+>configure hostname (S1,R1 etc.)
+	> secure the console and vty lines with a password (service pass-encrypted)
+	> configure a password for the priveledged mode (enable secret)
+	> include a message for unauthorized access (banner motd)
+=====================
+> vtp domain ITInfrachannel (Internal.vut.ac.za)
+> vtp mode server
+> vtp password ITInfrachannel123
+> vtp version 2
+=====================
+>vlan 10 
+	>name Server
+>vlan 15 
+	>name Device_Management
+>vlan 20 
+	>name IT
+>vlan 30 
+	>name Marketing
+>vlan 40
+	>name HR
+>vlan 50 
+	>name User_Wireless
+=====================
+>int range fa0/1-3
+>switchport trunk encapsulation dot1q
+>switchport mode trunk
+>switchport trunk allowed vlan 10,15,20,30,40,50
+>do wr
+>ex
+_____________________
+>int vlan 10
+	> ip 192.168.10.1 255.255.255.0
+	>no shut
+	>desc connected to the Servers
+>int vlan 15
+	> ip 192.168.15.1 255.255.255.0
+	>no shut
+	>desc connected to the Servers
+>int vlan 20
+	> ip 192.168.20.1 255.255.255.0
+	>no shut
+	>desc connected to the Servers
+>int vlan 30
+	> ip 192.168.30.1 255.255.255.0
+	>no shut
+	>desc connected to the Servers
+>int vlan 40
+	> ip 192.168.40.1 255.255.255.0
+	>no shut
+	>desc connected to the Servers
+>int vlan 50
+	> ip 192.168.50.1 255.255.255.0
+	>no shut
+	>desc connected to the Servers
+--------------------------
+Controller (WLAN)
+-> Assign an address for the controller (Physical)
+>192.168.50.2 255.255.255.0
+>192.168.50.1
+--------------------------
+copy run start (copy running-config startup-config)
+--------------------------
+>service dhcp
+>ip dhcp excluded-address 192.168.10.1
+>ip dhcp excluded-address 192.168.15.1
+>ip dhcp excluded-address 192.168.20.1
+>ip dhcp excluded-address 192.168.30.1
+>ip dhcp excluded-address 192.168.40.1
+>ip dhcp excluded-address 192.168.50.1 192.168.50.2
+	>ip dhcp pool IT-Dept
+	>network 192.168.20.0 255.255.255.0
+	>default-router 192.168.10.1
+>ex
+	>ip dhcp pool Marketing-Dept
+	>network 192.168.30.0 255.255.255.0
+	>default-router 192.168.10.1
+>ex
+	>ip dhcp pool HR-Dept
+	>network 192.168.40.0 255.255.255.0
+	>default-router 192.168.10.1
+>ex
+	>ip dhcp pool User-Wireless
+	>network 192.168.50.0 255.255.255.0
+	>default-router 192.168.10.1
+==========================
+L2 Switch = for all the aggregation switches => Vtp Automatic configuration
+>vtp domain ITInfrachannel (internal.vut.ac.za)
+>vtp version 2
+>vtp pass ITInfrachannel123
+>vtp mode client
+==========================
++Switch connected to the marketing department
+>int fa0/1
+>switchport mode access
+>switchcport access vlan 30
+>desc connected from s1 to the PC-Marketing
+>ex
+>int g0/1
+>switchport mode access
+>switchcport access vlan 50
+>desc connected to the AP_0
+__________________________
++Switch connected to the HR department
+>int fa0/1
+>switchport mode access
+>switchcport access vlan 40
+>desc connected from s2 to the PC-HR
+>ex
+>int g0/1
+>switchport mode access
+>switchcport access vlan 50
+>desc connected to the AP_1
+__________________________
++Switch connected to the IT department
+>int fa0/1
+>switchport mode access
+>switchcport access vlan 20
+>desc connected to PC-IT
+>ex
+>int fa0/2
+>switchport mode access
+>switchcport access vlan 10
+>desc connected to the Internal-Server
+>ex
+>int g0/1
+>switchport mode access
+>switchcport access vlan 50
+>desc connected to the controller
+===========================
+L3 Switch (Core)
+#sh ip route (show ip route)
+>int g0/1
+	>ip add 172.16.0.2 255.255.255.252
+	>no shut
+(This should fail because it's still a switchport , change it L3 routing)
+>no switchport
+>ip routing
+(Now add the address again and it should work this time)
+___________________________
+(configure default static routing so the internal LAN can connect the external internet)
+ip route 0.0.0.0 0.0.0.0 172.16.0.1 => switch side connection
+ip route 0.0.0.0 0.0.0.0 10.1.1.1 => server side connection
+{(I'm  now sure this is the right command for this, I'll double check!!!)}
+===========================
+(Plug the power cable into the access points)
+___________________________
+(Add a laptop -> connect it to the IT-Switch)
+___________________________
+(on the port you connect the laptop to)
+>int fa0/4
+>switchport mode access
+>switchcport access vlan 50
+>ex
+=========================== 
+>on the connected Laptop
+(go to the browser and type the address of the controller to access it's configuration mode)
+>192.168.50.2
+(Configure the Username,Password Acccording to Oilli's Worksheet)
+(Configure the IP address, Subnet Mask and Default Gateway)
+(There are some places you might need assistance with)
+>apply and save configuration
++++++++++++++++++++++++++++
+(This should reset the Controller)
+___________________________
+(Access the controller from the laptop again)
+>should you see a message (Server Host Unreachable)
+>add a s to the http => access the controller in secure mode because now it has been configured
+>Login to the controller using the created user and pass
+	>analyse AP'S and Controller Settings
+____________________________
+(Add end-users and connect them to the AP'S)
+>use the created SSID = EMPLOYEE PASSWORD = ITInfrachannel123 from the worksheet.
+>End-devices should be able to request for IP address using DHCP
+>Everything should be able to communicate 
+(For connection and Guideline check olli's worksheet)
+______________________________________________________________________________
+-include IP Phones
+-Network Redundancy
+-Protocols - Routing , HSRP/GLBP/VRRP/
+-Latency/Scalability 
+-Protocols - Routing Protocols RIP,OSPF,EIGRP,IS-IS,BGP
+-Service Protocols
+-Protocols - ARP,SMTP,DHCP,DNS,
+=====================
